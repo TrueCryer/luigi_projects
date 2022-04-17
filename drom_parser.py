@@ -15,7 +15,7 @@ class GetPage(luigi.Task):
     page  = luigi.IntParameter()
 
     def output(self):
-        return luigi.LocalTarget(f"pages/{self.brand}-{self.model}-p{self.page}.html")
+        return luigi.LocalTarget(f"data/drom/pages/{self.brand}-{self.model}-p{self.page}.html")
 
     def run(self):
         url = f"https://auto.drom.ru/{self.brand}/{self.model}/page{self.page}/"
@@ -35,7 +35,7 @@ class GetRawData(luigi.Task):
         return [GetPage(self.brand, self.model, page+1) for page in range(self.pages)]
 
     def output(self):
-        return luigi.LocalTarget(f"pickle/{self.brand}-{self.model}.pickle")
+        return luigi.LocalTarget(f"data/drom/pickle/{self.brand}-{self.model}.pickle")
 
     def run(self):
         cars = []
@@ -66,7 +66,7 @@ class GetCSV(luigi.Task):
         return GetRawData(self.brand, self.model, self.pages)
 
     def output(self):
-        return luigi.LocalTarget(f"csv/{self.brand}-{self.model}.csv")
+        return luigi.LocalTarget(f"data/drom/csv/{self.brand}-{self.model}.csv")
 
     def run(self):
         with open(self.input().path, 'rb') as f:
@@ -116,7 +116,7 @@ class GetData(luigi.Task):
         return GetCSV(self.brand, self.model, self.pages)
 
     def output(self):
-        return luigi.LocalTarget(f"csv/{self.brand}-{self.model}.ftr")
+        return luigi.LocalTarget(f"data/drom/ftr/{self.brand}-{self.model}.ftr")
 
     def run(self):
         self.df = pd.read_csv(self.input().path, encoding='cp1251')
@@ -126,11 +126,9 @@ class GetData(luigi.Task):
     def proceed_dataframe(self):
         self.df['year'] = self.df.title.apply(lambda x: int(x[-4:]))
         self.df['id'] = self.df.ref.apply(lambda x: x.split('/')[-1].split('.')[0])
+        self.df['index'] = self.df.id
+        self.df.set_index('index')
 
 
 if __name__ == '__main__':
-    #cars = []
-    #for p in range(10):
-    #    page = get_page('renault', 'duster', p)
-    #    cars.extend(extract_cars(page))
     luigi.run()
